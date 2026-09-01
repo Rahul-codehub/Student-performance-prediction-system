@@ -1,0 +1,7 @@
+Student Performance Prediction Model Evaluation
+================================================
+
+MAE      : 0.3416
+MSE      : 0.1841
+RMSE     : 0.4291
+R2 Score : 0.9979
