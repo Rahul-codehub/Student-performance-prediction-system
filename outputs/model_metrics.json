@@ -1,0 +1,85 @@
+{
+  "model_name": "Linear Regression",
+  "trained_at": "2026-09-17T08:15:13.882653+00:00",
+  "features": [
+    "study_hours",
+    "attendance",
+    "previous_marks"
+  ],
+  "target": "final_marks",
+  "dataset_rows": 20,
+  "dataset_rows_after_cleaning": 20,
+  "duplicates_removed": 0,
+  "holdout_size": 4,
+  "cv_folds": 5,
+  "selection_method": "Lowest 5-fold cross-validation MAE; CV R\u00b2 used as tie-breaker.",
+  "metrics": [
+    {
+      "name": "Linear Regression",
+      "mae": 0.34162469436935794,
+      "rmse": 0.4290770156736445,
+      "r2": 0.9979138007322448,
+      "cv_mae": 0.4266006952385212,
+      "cv_r2": 0.9980515974178958
+    },
+    {
+      "name": "Ridge Regression",
+      "mae": 0.43545289823282474,
+      "rmse": 0.5082254111220287,
+      "r2": 0.9970731663624912,
+      "cv_mae": 0.4635728390182418,
+      "cv_r2": 0.9973300873700847
+    },
+    {
+      "name": "Random Forest",
+      "mae": 0.5558333333333341,
+      "rmse": 0.6994779799568012,
+      "r2": 0.9944558703179099,
+      "cv_mae": 1.333444444444445,
+      "cv_r2": 0.9742538979043902
+    },
+    {
+      "name": "Gradient Boosting",
+      "mae": 1.1737984546300044,
+      "rmse": 1.3678894584458678,
+      "r2": 0.9787974892858093,
+      "cv_mae": 1.415063243086785,
+      "cv_r2": 0.9765808161138703
+    }
+  ],
+  "selected_metrics": {
+    "name": "Linear Regression",
+    "mae": 0.34162469436935794,
+    "rmse": 0.4290770156736445,
+    "r2": 0.9979138007322448,
+    "cv_mae": 0.4266006952385212,
+    "cv_r2": 0.9980515974178958
+  },
+  "feature_summary": {
+    "study_hours": {
+      "min": 1.0,
+      "max": 9.0,
+      "mean": 5.1
+    },
+    "attendance": {
+      "min": 60.0,
+      "max": 96.0,
+      "mean": 79.75
+    },
+    "previous_marks": {
+      "min": 45.0,
+      "max": 88.0,
+      "mean": 65.65
+    },
+    "final_marks": {
+      "min": 50.0,
+      "max": 95.0,
+      "mean": 72.55
+    }
+  },
+  "limitations": [
+    "The supplied dataset contains only 20 records.",
+    "The evaluation results describe this dataset and validation procedure; they are not a guarantee of real-world prediction accuracy.",
+    "Predictions outside the training feature ranges are extrapolations and should be treated cautiously."
+  ]
+}

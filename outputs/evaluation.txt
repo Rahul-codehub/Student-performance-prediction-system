@@ -1,7 +1,29 @@
-Student Performance Prediction Model Evaluation
-================================================
+Student Performance Prediction System — Model Evaluation
+============================================================
 
+Training records: 20
+Holdout test records: 4
+Cross-validation folds: 5
+Selected model: Linear Regression
+Selection rule: Lowest 5-fold cross-validation MAE; CV R² used as tie-breaker.
+
+Selected model metrics
+-----------------------
 MAE      : 0.3416
-MSE      : 0.1841
 RMSE     : 0.4291
-R2 Score : 0.9979
+R²       : 0.9979
+CV MAE   : 0.4266
+CV R²    : 0.9981
+
+Model comparison
+----------------
+Linear Regression  | MAE 0.3416 | RMSE 0.4291 | R² 0.9979 | CV MAE 0.4266 | CV R² 0.9981
+Ridge Regression   | MAE 0.4355 | RMSE 0.5082 | R² 0.9971 | CV MAE 0.4636 | CV R² 0.9973
+Random Forest      | MAE 0.5558 | RMSE 0.6995 | R² 0.9945 | CV MAE 1.3334 | CV R² 0.9743
+Gradient Boosting  | MAE 1.1738 | RMSE 1.3679 | R² 0.9788 | CV MAE 1.4151 | CV R² 0.9766
+
+Limitations
+-----------
+- The supplied dataset contains only 20 records.
+- The evaluation results describe this dataset and validation procedure; they are not a guarantee of real-world prediction accuracy.
+- Predictions outside the training feature ranges are extrapolations and should be treated cautiously.

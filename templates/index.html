@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Performance Prediction System</title>
+  <meta name="description" content="Academic student performance prediction and model evaluation system.">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">SP</div>
+        <div>
+          <strong>Student Performance</strong>
+          <span>Prediction System</span>
+        </div>
+      </div>
+
+      <div class="nav-label">WORKSPACE</div>
+      <nav class="nav-list">
+        <button class="nav active" data-view="overview"><span>01</span>Overview</button>
+        <button class="nav" data-view="predict"><span>02</span>Predict</button>
+        <button class="nav" data-view="students"><span>03</span>Students</button>
+        <button class="nav" data-view="history"><span>04</span>Prediction history</button>
+        <button class="nav" data-view="data"><span>05</span>Training data</button>
+        <button class="nav" data-view="model"><span>06</span>Model evaluation</button>
+      </nav>
+
+      <div class="sidebar-note">
+        <div class="status-line"><span class="status-dot" id="statusDot"></span><span id="statusText">Checking system</span></div>
+        <small id="healthText">Loading model information…</small>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="breadcrumb">Academic analytics / <span id="crumb">Overview</span></div>
+          <h1 id="pageTitle">Overview</h1>
+          <p id="pageSubtitle">Current application activity, supplied training data, and model evaluation.</p>
+        </div>
+        <div class="top-actions">
+          <span class="source-badge">Values are calculated from application data</span>
+          <button class="button secondary" id="refreshBtn">Refresh</button>
+        </div>
+      </header>
+
+      <section id="overviewView" class="view active">
+        <div class="notice">
+          <div><strong>Scope of this system</strong><span>The model predicts final marks from study hours, attendance, and previous marks. Prediction history and student records shown here are created by actual actions in this application.</span></div>
+          <button class="button secondary" data-view="predict">Make a prediction</button>
+        </div>
+
+        <div class="stat-grid" id="overviewStats"></div>
+
+        <div class="content-grid two">
+          <article class="panel">
+            <div class="panel-header"><div><h2>Prediction activity</h2><p>Only completed prediction requests are counted.</p></div><button class="link-button" data-view="history">Open history</button></div>
+            <div id="activitySummary" class="activity-summary"></div>
+            <div class="mini-section-title">Predicted performance bands</div>
+            <div id="bandChart" class="band-chart"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header"><div><h2>Training data quality</h2><p>Checks from the supplied CSV training file.</p></div><button class="link-button" data-view="data">View data</button></div>
+            <div id="dataQuality" class="quality-grid"></div>
+            <div id="dataQualityNote" class="small-note"></div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-header"><div><h2>Recent prediction requests</h2><p>Newest records from prediction history.</p></div></div>
+          <div id="recentPredictions"></div>
+        </article>
+
+        <article class="panel caution-panel">
+          <div class="panel-header"><div><h2>Model evaluation context</h2><p>These are validation results, not observed student outcomes.</p></div></div>
+          <div id="overviewModelContext"></div>
+        </article>
+      </section>
+
+      <section id="predictView" class="view">
+        <div class="section-intro"><div><h2>Predict final marks</h2><p>Enter one student's current academic inputs. The request is logged automatically in prediction history.</p></div></div>
+        <div class="content-grid two predict-grid">
+          <article class="panel">
+            <div class="form-title"><span class="step">1</span><div><h2>Student inputs</h2><p>Use values in the ranges supported by the application.</p></div></div>
+            <form id="predictionForm" class="form">
+              <div class="field-row two">
+                <label class="field"><span>Study hours per week</span><input name="study_hours" type="number" min="0" max="24" step="0.1" placeholder="e.g. 6.5" required><small>Training range: <b id="rangeStudy">—</b></small></label>
+                <label class="field"><span>Attendance (%)</span><input name="attendance" type="number" min="0" max="100" step="0.1" placeholder="e.g. 82" required><small>Training range: <b id="rangeAttendance">—</b></small></label>
+              </div>
+              <label class="field"><span>Previous marks (%)</span><input name="previous_marks" type="number" min="0" max="100" step="0.1" placeholder="e.g. 68" required><small>Training range: <b id="rangePrevious">—</b></small></label>
+              <div class="form-note">The model can technically accept wider values, but inputs outside the training ranges are flagged because they are extrapolations.</div>
+              <button class="button primary full" type="submit">Calculate prediction</button>
+            </form>
+          </article>
+
+          <article class="panel result-panel" id="predictionResult">
+            <div class="empty-result">
+              <span class="empty-symbol">—</span>
+              <h2>No prediction yet</h2>
+              <p>Run the prediction to see the model output, performance band, and evaluation context.</p>
+            </div>
+          </article>
+        </div>
+
+        <article class="panel method-note">
+          <h2>How the result should be read</h2>
+          <div class="rule-grid">
+            <div><b>Predicted final marks</b><span>Estimated mark returned by the selected regression model.</span></div>
+            <div><b>Performance band</b><span>Rule-based label derived from the predicted mark: High ≥ 75, Moderate 60–74.9, Needs support 45–59.9, Low &lt; 45.</span></div>
+            <div><b>Guidance</b><span>Compares the supplied inputs with the averages in the training dataset. It is not a medical, psychological, or disciplinary assessment.</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="studentsView" class="view">
+        <div class="section-intro with-actions"><div><h2>Saved students</h2><p>Add a student by entering their details, or save the result of an existing prediction.</p></div><a class="button secondary" href="/api/export/students.csv">Export CSV</a></div>
+        <div class="content-grid two students-entry-grid">
+          <article class="panel">
+            <div class="form-title"><span class="step">01</span><div><h2>Add student</h2><p>This creates one real prediction and one saved student record.</p></div></div>
+            <form id="studentCreateForm" class="form">
+              <div class="field-row two">
+                <label class="field"><span>Student name</span><input name="name" maxlength="80" placeholder="Full name" required></label>
+                <label class="field"><span>Student ID <small>(optional)</small></span><input name="student_code" maxlength="30" placeholder="University / roll number"></label>
+              </div>
+              <div class="field-row two">
+                <label class="field"><span>Study hours per week</span><input name="study_hours" type="number" min="0" max="24" step="0.1" required></label>
+                <label class="field"><span>Attendance (%)</span><input name="attendance" type="number" min="0" max="100" step="0.1" required></label>
+              </div>
+              <label class="field"><span>Previous marks (%)</span><input name="previous_marks" type="number" min="0" max="100" step="0.1" required></label>
+              <div class="form-note">The student is saved only after the prediction is calculated successfully.</div>
+              <button class="button primary full" type="submit">Predict &amp; save student</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-header"><div><h2>Record status</h2><p>Use this area to confirm the latest student save.</p></div></div>
+            <div id="studentCreateResult" class="empty-result compact-empty"><span class="empty-symbol">—</span><h2>No new student yet</h2><p>The latest successful save will appear here.</p></div>
+          </article>
+        </div>
+        <article class="panel">
+          <div class="table-tools"><input id="studentSearch" class="search" placeholder="Search by name or student ID"><span id="studentCount" class="table-count"></span></div>
+          <div id="studentsTable"></div>
+        </article>
+      </section>
+
+      <section id="historyView" class="view">
+        <div class="section-intro with-actions"><div><h2>Prediction history</h2><p>Every successful prediction request is recorded with its inputs, output, model, and timestamp.</p></div><a class="button secondary" href="/api/export/prediction_history.csv">Export CSV</a></div>
+        <article class="panel">
+          <div class="table-tools"><input id="historySearch" class="search" placeholder="Search by student ID, band, or model"><span id="historyCount" class="table-count"></span></div>
+          <div id="historyTable"></div>
+        </article>
+      </section>
+
+      <section id="dataView" class="view">
+        <div class="section-intro"><div><h2>Training data</h2><p>The model is trained from the CSV dataset included with this project.</p></div></div>
+        <div id="dataSummary" class="stat-grid compact"></div>
+        <div class="content-grid two">
+          <article class="panel"><div class="panel-header"><div><h2>Feature summary</h2><p>Minimum, maximum, and average values in the training data.</p></div></div><div id="featureSummary"></div></article>
+          <article class="panel"><div class="panel-header"><div><h2>Dataset notes</h2><p>Data-quality and interpretation notes.</p></div></div><div id="datasetNotes"></div></article>
+        </div>
+        <article class="panel"><div class="panel-header"><div><h2>Supplied records</h2><p>Records currently present in the supplied CSV file.</p></div></div><div id="datasetTable"></div></article>
+      </section>
+
+      <section id="modelView" class="view">
+        <div class="section-intro with-actions"><div><h2>Model evaluation</h2><p>Compare candidate regressors using one fixed holdout split and deterministic 5-fold cross-validation.</p></div><button class="button primary" id="retrainBtn">Retrain from CSV</button></div>
+        <div class="content-grid two">
+          <article class="panel"><div class="panel-header"><div><h2>Model comparison</h2><p>Lower MAE/RMSE is better. R² is shown for context.</p></div></div><div id="modelTable"></div></article>
+          <article class="panel"><div class="panel-header"><div><h2>Selected model</h2><p>The model is selected from cross-validation MAE.</p></div></div><div id="selectedModel"></div></article>
+        </div>
+        <article class="panel caution-panel"><div class="panel-header"><div><h2>Limitations</h2><p>Important for academic interpretation.</p></div></div><div id="modelLimitations"></div></article>
+      </section>
+
+      <footer class="footer">Student Performance Prediction System · Flask · scikit-learn · SQLite · <span id="footerModel">Model: —</span></footer>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="studentSaveModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header"><div><h2>Save student record</h2><p>Store the current prediction as a named student snapshot.</p></div><button class="icon-button" id="closeModal">×</button></div>
+      <form id="studentSaveForm" class="form">
+        <label class="field"><span>Student name</span><input name="name" required maxlength="80" placeholder="Full name"></label>
+        <label class="field"><span>Student ID (optional)</span><input name="student_code" maxlength="30" placeholder="University / roll number"></label>
+        <div class="modal-actions"><button type="button" class="button secondary" id="cancelModal">Cancel</button><button type="submit" class="button primary">Save record</button></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
