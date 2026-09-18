@@ -1,41 +1,104 @@
-# Student Performance Prediction System
+# StudentIQ — Student Performance Analytics & Prediction System
 
-A college-ready Flask application for predicting final marks from three academic inputs: **study hours per week, attendance percentage, and previous marks**. The interface separates training data, model evaluation, prediction history, and saved student records so numbers are not mixed together.
+A college-ready Flask application that combines a supervised regression model with a web dashboard, SQLite persistence, model evaluation, explainability, data profiling, what-if simulation, student records, prediction history, and release tests.
 
-## What the application does
+## What is genuinely powered by data
 
-- Predicts final marks with the selected regression model.
-- Records every successful prediction request in SQLite prediction history.
-- Saves named student snapshots either from an existing prediction or through the Students → Add student form.
-- Shows the actual number of predictions, saved students, and training records.
-- Compares Linear Regression, Ridge Regression, Random Forest, and Gradient Boosting.
-- Uses one fixed holdout split and deterministic 5-fold cross-validation for model comparison.
-- Flags inputs outside the feature ranges present in the training dataset.
-- Shows the training-data mean/minimum/maximum values used for context.
-- Provides CSV export for student records and prediction history.
-- Uses a migration-safe SQLite schema so older project databases can be opened without breaking prediction or student creation.
-- Cleans up failed SQLite writes so duplicate student IDs do not leave the database locked.
-- Provides a training-data view so the supplied records can be inspected directly.
-- Provides a retraining action that rebuilds the model from the current CSV file.
+The supplied training source is `data/student_data.csv`.
 
-## Important data interpretation
+Current supplied dataset:
 
-The supplied CSV contains **20 records**. The evaluation metrics therefore describe a very small dataset and should not be presented as general real-world accuracy. The application deliberately labels holdout metrics and cross-validation metrics as model evaluation rather than as observed student outcomes.
+- 20 records
+- Inputs: `study_hours`, `attendance`, `previous_marks`
+- Target: `final_marks`
+- 0 missing values
+- 0 duplicate rows
 
-The performance band is a simple rule-based interpretation of the predicted mark. A separate risk level and heuristic support indicator are retained from the earlier version for continuity; they are derived rules, not model probabilities or observed outcomes:
+The runtime database starts empty. The dashboard does not contain fabricated students, prediction counts, or sample activity. Prediction history and saved students appear only after actual user actions.
+
+## Main modules
+
+### 1. Prediction workspace
+
+Accepts the three academic inputs, validates them, loads the selected trained model, produces a final-mark estimate, shows the performance band, displays model context and feature explanation, and records the prediction in SQLite.
+
+### 2. Scenario lab
+
+Runs two user-supplied scenarios through the same model without storing them in prediction history. This supports transparent what-if comparison without manufacturing student records.
+
+### 3. Student records
+
+Saves named prediction snapshots. Saving an existing prediction does not create another prediction. Direct student creation creates one prediction and one student record. Duplicate IDs are rejected safely.
+
+### 4. Academic analytics
+
+Uses only observed training data and actual runtime history. It includes:
+
+- Feature/target correlations
+- Final-mark distribution
+- Target summary statistics
+- Holdout actual-vs-predicted records
+- Runtime prediction counts and bands
+- Data-readiness disclosure for academic fields not present in the CSV
+
+### 5. Model lab
+
+Compares:
+
+- Linear Regression
+- Ridge Regression
+- Random Forest
+- Gradient Boosting
+
+The selected model is the one with the lowest cross-validation MAE; cross-validation R² is the tie-breaker.
+
+### 6. Model explainability
+
+When the selected model exposes coefficients, the application shows coefficient values and the corresponding feature contribution for a prediction. For tree models, feature-importance metadata is used instead. These are explanations of model behavior, not causal claims.
+
+### 7. Training data explorer
+
+Shows the exact CSV records and observed minimum, maximum, mean, median, and standard deviation values.
+
+### 8. Model versioning
+
+Each training run records a model version derived from the selected model and SHA-256 hash of the training CSV. Prediction history stores the model version used for that request.
+
+## Current model result
+
+Using the supplied 20-row dataset and the deterministic training procedure:
+
+- Selected model: **Linear Regression**
+- Holdout size: **4 records**
+- Holdout MAE: **0.3416**
+- Holdout RMSE: **0.4291**
+- Holdout R²: **0.9979**
+- 5-fold CV MAE: **0.4266**
+- 5-fold CV R²: **0.9981**
+
+These are evaluation results on a very small supplied dataset. They must not be described as 99.8% prediction accuracy or as a guarantee of real-world or institution-wide performance.
+
+## Support indicator
+
+The application retains the previous “risk/support” concept but makes the interpretation explicit. The score is derived from shortfalls relative to observed training-data averages and is shown as a **data-derived support index**. It is not a calibrated probability, diagnosis, or classification model.
+
+Performance bands are application rules applied to the predicted mark:
 
 - High: 75–100
 - Moderate: 60–74.9
 - Needs support: 45–59.9
 - Low: below 45
 
-These bands are application rules, not labels learned from the supplied dataset.
+## Data that is intentionally not invented
+
+The current CSV does not contain subject, semester, assignment, internal-assessment, or practical-score fields. The application therefore does not fabricate those dimensions. The Analytics page explicitly reports their absence so the system can be extended later when validated data is available.
 
 ## Project structure
 
 ```text
 student-performance-prediction/
 ├── app.py
+├── core.py
 ├── database.py
 ├── ml_pipeline.py
 ├── retrain.py
@@ -56,8 +119,11 @@ student-performance-prediction/
 │   └── styles.css
 └── tests/
     ├── conftest.py
+    ├── test_core.py
+    ├── test_ml_pipeline.py
+    ├── test_database.py
     ├── test_app.py
-    └── test_ml_pipeline.py
+    └── test_release_contracts.py
 ```
 
 ## Run on Windows
@@ -88,22 +154,24 @@ python app.py
 pytest -q
 ```
 
-The test suite checks dataset schema, deterministic model selection, finite/bounded predictions, stable inference, evaluation metadata, SQLite migration, student creation, duplicate-ID handling, prediction logging, and deletion. When Flask is installed, the route tests additionally exercise the real Flask test client. A standalone route harness is used during release validation when Flask is unavailable in the build sandbox.
+In the build sandbox used for the release, **11 tests passed and 1 Flask test module was skipped** because Flask was not installed and packages could not be downloaded. The skipped module contains the real Flask test-client checks and should run after `pip install -r requirements.txt` in the user's environment. The non-Flask suite covers ML behavior, explainability, database migration, release contracts, deterministic training, and the zero-record release state.
 
 ## API
 
-- `GET /health` — current service/model status.
-- `GET /api/dashboard` — application activity, dataset summary, and model evaluation.
+- `GET /health` — model/service status and model version.
+- `GET /api/dashboard` — runtime activity, dataset summary, and model metadata.
+- `GET /api/analytics` — observed dataset relationships, holdout details, and runtime analytics.
 - `POST /api/predict` — create and log one prediction.
+- `POST /api/simulate` — run a prediction without saving it to history.
 - `GET /api/history` — prediction history with optional search.
 - `GET /api/students` — saved student records with optional search.
-- `POST /api/students` — save a student snapshot, optionally linked to an existing prediction; without a prediction ID, it calculates and records a new prediction first.
-- `DELETE /api/students/<id>` — delete one saved student record.
-- `GET /api/data` — current training dataset and feature summary.
-- `GET /api/export/students.csv` — export saved student records.
+- `POST /api/students` — save a student snapshot; existing predictions can be reused without double-counting.
+- `DELETE /api/students/<id>` — delete a saved student record.
+- `GET /api/data` — current training CSV and feature summary.
+- `GET /api/export/students.csv` — export saved students.
 - `GET /api/export/prediction_history.csv` — export prediction history.
 - `POST /api/retrain` — retrain candidate models from the current CSV.
 
-## Current supplied model result
+## Important academic limitation
 
-The current training file has 20 records. The selected model is Linear Regression under the deterministic selection procedure. The stored evaluation reports a holdout MAE of approximately 0.342 marks and a holdout R² of approximately 0.998 on 4 holdout records, with 5-fold CV MAE of approximately 0.427. Because the dataset is small, these metrics must be interpreted as an academic demonstration of the supplied data, not as a production accuracy guarantee.
+The software architecture is intentionally richer than a single-prediction demo, but the underlying dataset remains small. A larger validated dataset is the main requirement before using the system for real academic decision-making.

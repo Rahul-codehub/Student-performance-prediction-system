@@ -40,12 +40,13 @@ def test_old_schema_is_migrated_and_writes_work(tmp_path, monkeypatch):
         'attendance': 82,
         'previous_marks': 68,
         'predicted_marks': 70,
-        'risk_level': 'On Track',
-        'risk_score': 80,
+        'risk_level': 'Review recommended',
+        'risk_score': 70,
         'performance_band': 'Moderate (60–74.9)',
         'prediction_low': 69,
         'prediction_high': 71,
         'model_name': 'Linear Regression',
+        'model_version': 'linear-regression-test',
     })
     student_id = database.add_student({
         'name': 'Migration Test',
@@ -54,12 +55,14 @@ def test_old_schema_is_migrated_and_writes_work(tmp_path, monkeypatch):
         'attendance': 82,
         'previous_marks': 68,
         'predicted_marks': 70,
-        'risk_level': 'On Track',
-        'risk_score': 80,
+        'risk_level': 'Review recommended',
+        'risk_score': 70,
         'performance_band': 'Moderate (60–74.9)',
         'model_name': 'Linear Regression',
+        'model_version': 'linear-regression-test',
         'prediction_id': prediction_id,
     })
     assert prediction_id > 0
     assert student_id > 0
     assert database.list_students()[0]['student_code'] == 'MIG-001'
+    assert database.list_students()[0]['model_version'] == 'linear-regression-test'

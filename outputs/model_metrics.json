@@ -1,6 +1,9 @@
 {
   "model_name": "Linear Regression",
-  "trained_at": "2026-09-17T08:15:13.882653+00:00",
+  "model_family": "LinearRegression",
+  "model_version": "linear-regression-82a7d51ab3",
+  "training_data_hash": "82a7d51ab38304e215902eeb6f266e9153308fd8b0f2c89cac48d011b92d0827",
+  "trained_at": "2026-09-18T07:10:38.071230+00:00",
   "features": [
     "study_hours",
     "attendance",
@@ -12,7 +15,7 @@
   "duplicates_removed": 0,
   "holdout_size": 4,
   "cv_folds": 5,
-  "selection_method": "Lowest 5-fold cross-validation MAE; CV R\u00b2 used as tie-breaker.",
+  "selection_method": "Lowest cross-validation MAE; cross-validation R\u00b2 used as tie-breaker.",
   "metrics": [
     {
       "name": "Linear Regression",
@@ -55,31 +58,121 @@
     "cv_mae": 0.4266006952385212,
     "cv_r2": 0.9980515974178958
   },
+  "holdout_rows": [
+    {
+      "source_row": 2,
+      "study_hours": 2.0,
+      "attendance": 65.0,
+      "previous_marks": 50.0,
+      "actual_final_marks": 55.0,
+      "predicted_final_marks": 54.9953,
+      "residual": 0.0047
+    },
+    {
+      "source_row": 19,
+      "study_hours": 6.0,
+      "attendance": 87.0,
+      "previous_marks": 72.0,
+      "actual_final_marks": 80.0,
+      "predicted_final_marks": 79.7305,
+      "residual": 0.2695
+    },
+    {
+      "source_row": 17,
+      "study_hours": 4.0,
+      "attendance": 76.0,
+      "previous_marks": 61.0,
+      "actual_final_marks": 67.0,
+      "predicted_final_marks": 67.3629,
+      "residual": -0.3629
+    },
+    {
+      "source_row": 3,
+      "study_hours": 3.0,
+      "attendance": 70.0,
+      "previous_marks": 55.0,
+      "actual_final_marks": 60.0,
+      "predicted_final_marks": 60.7294,
+      "residual": -0.7294
+    }
+  ],
+  "correlations_with_target": {
+    "study_hours": 0.9933425040567929,
+    "attendance": 0.9953343614071201,
+    "previous_marks": 0.9979073037179057
+  },
   "feature_summary": {
     "study_hours": {
       "min": 1.0,
       "max": 9.0,
-      "mean": 5.1
+      "mean": 5.1,
+      "median": 5.0,
+      "std": 2.1656407827707715
     },
     "attendance": {
       "min": 60.0,
       "max": 96.0,
-      "mean": 79.75
+      "mean": 79.75,
+      "median": 81.0,
+      "std": 10.718558671761796
     },
     "previous_marks": {
       "min": 45.0,
       "max": 88.0,
-      "mean": 65.65
+      "mean": 65.65,
+      "median": 66.0,
+      "std": 11.921723868635777
     },
     "final_marks": {
       "min": 50.0,
       "max": 95.0,
-      "mean": 72.55
+      "mean": 72.55,
+      "median": 73.0,
+      "std": 12.990284831365322
     }
+  },
+  "target_summary": {
+    "mean": 72.55,
+    "median": 73.0,
+    "std": 12.990284831365322,
+    "q1": 63.0,
+    "q3": 82.5
+  },
+  "explainability": {
+    "type": "linear_coefficients",
+    "intercept": 2.3412071086247295,
+    "features": [
+      {
+        "feature": "study_hours",
+        "coefficient": 1.3095581344019411,
+        "input_value": 5.1,
+        "contribution": 6.678746485449899
+      },
+      {
+        "feature": "attendance",
+        "coefficient": 0.3569689299907155,
+        "input_value": 79.75,
+        "contribution": 28.46827216675956
+      },
+      {
+        "feature": "previous_marks",
+        "coefficient": 0.5340711993780016,
+        "input_value": 65.65,
+        "contribution": 35.06177423916581
+      }
+    ],
+    "note": "For the selected linear model, contribution is coefficient \u00d7 input. Contributions explain the raw linear prediction; the displayed prediction is bounded to 0\u2013100 by the application."
   },
   "limitations": [
     "The supplied dataset contains only 20 records.",
-    "The evaluation results describe this dataset and validation procedure; they are not a guarantee of real-world prediction accuracy.",
-    "Predictions outside the training feature ranges are extrapolations and should be treated cautiously."
-  ]
+    "Evaluation metrics describe this dataset and validation procedure; they are not a guarantee of real-world prediction accuracy.",
+    "Predictions outside the training feature ranges are extrapolations and should be treated cautiously.",
+    "The current dataset contains no subject-wise, semester-wise, demographic, assignment, or internal-assessment fields, so those analytics are not fabricated by the application."
+  ],
+  "data_availability": {
+    "subject_level": false,
+    "semester_level": false,
+    "assignment_level": false,
+    "internal_assessment": false
+  }
 }

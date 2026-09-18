@@ -1,11 +1,13 @@
 Student Performance Prediction System — Model Evaluation
-============================================================
+================================================================
 
-Training records: 20
-Holdout test records: 4
-Cross-validation folds: 5
-Selected model: Linear Regression
-Selection rule: Lowest 5-fold cross-validation MAE; CV R² used as tie-breaker.
+Training records       : 20
+Holdout test records   : 4
+Cross-validation folds : 5
+Selected model         : Linear Regression
+Model version          : linear-regression-82a7d51ab3
+Training data SHA-256  : 82a7d51ab38304e215902eeb6f266e9153308fd8b0f2c89cac48d011b92d0827
+Selection rule         : Lowest cross-validation MAE; cross-validation R² used as tie-breaker.
 
 Selected model metrics
 -----------------------
@@ -22,8 +24,16 @@ Ridge Regression   | MAE 0.4355 | RMSE 0.5082 | R² 0.9971 | CV MAE 0.4636 | CV 
 Random Forest      | MAE 0.5558 | RMSE 0.6995 | R² 0.9945 | CV MAE 1.3334 | CV R² 0.9743
 Gradient Boosting  | MAE 1.1738 | RMSE 1.3679 | R² 0.9788 | CV MAE 1.4151 | CV R² 0.9766
 
+Observed holdout rows
+---------------------
+CSV row 2: actual=55.00, predicted=55.00, residual=0.00
+CSV row 19: actual=80.00, predicted=79.73, residual=0.27
+CSV row 17: actual=67.00, predicted=67.36, residual=-0.36
+CSV row 3: actual=60.00, predicted=60.73, residual=-0.73
+
 Limitations
 -----------
 - The supplied dataset contains only 20 records.
-- The evaluation results describe this dataset and validation procedure; they are not a guarantee of real-world prediction accuracy.
+- Evaluation metrics describe this dataset and validation procedure; they are not a guarantee of real-world prediction accuracy.
 - Predictions outside the training feature ranges are extrapolations and should be treated cautiously.
+- The current dataset contains no subject-wise, semester-wise, demographic, assignment, or internal-assessment fields, so those analytics are not fabricated by the application.

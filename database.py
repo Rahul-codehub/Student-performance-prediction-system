@@ -45,6 +45,7 @@ def init_db() -> None:
             performance_band TEXT NOT NULL DEFAULT 'Not classified',
             guidance TEXT NOT NULL DEFAULT '',
             model_name TEXT NOT NULL DEFAULT 'Unknown',
+            model_version TEXT,
             prediction_id INTEGER,
             created_at TEXT NOT NULL
         );
@@ -62,12 +63,12 @@ def init_db() -> None:
             prediction_low REAL,
             prediction_high REAL,
             model_name TEXT NOT NULL DEFAULT 'Unknown',
+            model_version TEXT,
             created_at TEXT NOT NULL
         );
         """
     )
 
-    # Migrate databases created by the earlier project versions.
     for name, definition in {
         "risk_level": "TEXT NOT NULL DEFAULT 'Not classified'",
         "risk_score": "INTEGER",
@@ -75,6 +76,7 @@ def init_db() -> None:
         "performance_band": "TEXT NOT NULL DEFAULT 'Not classified'",
         "guidance": "TEXT NOT NULL DEFAULT ''",
         "model_name": "TEXT NOT NULL DEFAULT 'Unknown'",
+        "model_version": "TEXT",
         "prediction_id": "INTEGER",
     }.items():
         _ensure_column(conn, "students", name, definition)
@@ -86,6 +88,7 @@ def init_db() -> None:
         "prediction_low": "REAL",
         "prediction_high": "REAL",
         "model_name": "TEXT NOT NULL DEFAULT 'Unknown'",
+        "model_version": "TEXT",
     }.items():
         _ensure_column(conn, "prediction_history", name, definition)
 
@@ -93,8 +96,6 @@ def init_db() -> None:
     conn.close()
 
 
-# Always initialize/migrate the database when this module is imported.
-# This prevents an old packaged SQLite file from breaking the first request.
 init_db()
 
 
@@ -104,8 +105,9 @@ def add_prediction(data: dict) -> int:
         cur = conn.execute(
             """INSERT INTO prediction_history
             (student_code, study_hours, attendance, previous_marks, predicted_marks,
-             risk_level, risk_score, performance_band, prediction_low, prediction_high, model_name, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             risk_level, risk_score, performance_band, prediction_low, prediction_high,
+             model_name, model_version, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 data.get("student_code"),
                 data["study_hours"],
@@ -118,6 +120,7 @@ def add_prediction(data: dict) -> int:
                 data.get("prediction_low"),
                 data.get("prediction_high"),
                 data.get("model_name", "Unknown"),
+                data.get("model_version"),
                 now_iso(),
             ),
         )
@@ -136,8 +139,9 @@ def add_student(data: dict) -> int:
         cur = conn.execute(
             """INSERT INTO students
             (student_code, name, study_hours, attendance, previous_marks, predicted_marks,
-             risk_level, risk_score, recommendations, performance_band, guidance, model_name, prediction_id, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             risk_level, risk_score, recommendations, performance_band, guidance, model_name,
+             model_version, prediction_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 data.get("student_code"),
                 data["name"],
@@ -151,6 +155,7 @@ def add_student(data: dict) -> int:
                 data.get("performance_band", "Not classified"),
                 data.get("guidance", ""),
                 data.get("model_name", "Unknown"),
+                data.get("model_version"),
                 data.get("prediction_id"),
                 now_iso(),
             ),
@@ -166,82 +171,102 @@ def add_student(data: dict) -> int:
 
 def attach_student_to_prediction(prediction_id: int, student_code: str | None) -> None:
     conn = connect()
-    conn.execute("UPDATE prediction_history SET student_code=? WHERE id=?", (student_code, int(prediction_id)))
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("UPDATE prediction_history SET student_code=? WHERE id=?", (student_code, int(prediction_id)))
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def list_students(query: str = "") -> list[dict]:
     conn = connect()
-    if query:
-        rows = conn.execute(
-            "SELECT * FROM students WHERE name LIKE ? OR student_code LIKE ? ORDER BY id DESC",
-            (f"%{query}%", f"%{query}%"),
-        ).fetchall()
-    else:
-        rows = conn.execute("SELECT * FROM students ORDER BY id DESC").fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    try:
+        if query:
+            rows = conn.execute(
+                "SELECT * FROM students WHERE name LIKE ? OR student_code LIKE ? ORDER BY id DESC",
+                (f"%{query}%", f"%{query}%"),
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM students ORDER BY id DESC").fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
 
 
 def delete_student(student_id: int) -> bool:
     conn = connect()
-    cur = conn.execute("DELETE FROM students WHERE id=?", (student_id,))
-    conn.commit()
-    ok = cur.rowcount > 0
-    conn.close()
-    return ok
+    try:
+        cur = conn.execute("DELETE FROM students WHERE id=?", (student_id,))
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
 
 
 def get_prediction(prediction_id: int) -> dict | None:
     conn = connect()
-    row = conn.execute("SELECT * FROM prediction_history WHERE id=?", (int(prediction_id),)).fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        row = conn.execute("SELECT * FROM prediction_history WHERE id=?", (int(prediction_id),)).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
 
 
 def list_predictions(query: str = "", limit: int = 100) -> list[dict]:
     conn = connect()
-    if query:
-        rows = conn.execute(
-            """SELECT * FROM prediction_history
-               WHERE CAST(id AS TEXT) LIKE ? OR student_code LIKE ? OR risk_level LIKE ? OR performance_band LIKE ? OR model_name LIKE ?
-               ORDER BY id DESC LIMIT ?""",
-            (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%", int(limit)),
-        ).fetchall()
-    else:
-        rows = conn.execute(
-            "SELECT * FROM prediction_history ORDER BY id DESC LIMIT ?", (int(limit),)
-        ).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    try:
+        if query:
+            rows = conn.execute(
+                """SELECT * FROM prediction_history
+                   WHERE CAST(id AS TEXT) LIKE ? OR student_code LIKE ? OR risk_level LIKE ?
+                   OR performance_band LIKE ? OR model_name LIKE ? OR model_version LIKE ?
+                   ORDER BY id DESC LIMIT ?""",
+                (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%", int(limit)),
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM prediction_history ORDER BY id DESC LIMIT ?", (int(limit),)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
 
 
 def dashboard_stats() -> dict:
     conn = connect()
-    total_predictions = int(conn.execute("SELECT COUNT(*) FROM prediction_history").fetchone()[0])
-    saved_students = int(conn.execute("SELECT COUNT(*) FROM students").fetchone()[0])
-    prediction_summary = conn.execute(
-        """SELECT AVG(predicted_marks) AS avg_prediction,
-                  AVG(attendance) AS avg_attendance,
-                  MIN(predicted_marks) AS min_prediction,
-                  MAX(predicted_marks) AS max_prediction
-           FROM prediction_history"""
-    ).fetchone()
-    latest = conn.execute(
-        "SELECT created_at, predicted_marks, performance_band, risk_level, risk_score, model_name, student_code FROM prediction_history ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    recent = conn.execute("SELECT * FROM prediction_history ORDER BY id DESC LIMIT 8").fetchall()
-    band_rows = conn.execute(
-        "SELECT performance_band, COUNT(*) AS count FROM prediction_history GROUP BY performance_band"
-    ).fetchall()
-    conn.close()
+    try:
+        total_predictions = int(conn.execute("SELECT COUNT(*) FROM prediction_history").fetchone()[0])
+        saved_students = int(conn.execute("SELECT COUNT(*) FROM students").fetchone()[0])
+        prediction_summary = conn.execute(
+            """SELECT AVG(predicted_marks) AS avg_prediction,
+                      AVG(attendance) AS avg_attendance,
+                      MIN(predicted_marks) AS min_prediction,
+                      MAX(predicted_marks) AS max_prediction
+               FROM prediction_history"""
+        ).fetchone()
+        latest = conn.execute(
+            """SELECT created_at, predicted_marks, performance_band, risk_level, risk_score,
+                      model_name, model_version, student_code
+               FROM prediction_history ORDER BY id DESC LIMIT 1"""
+        ).fetchone()
+        recent = conn.execute("SELECT * FROM prediction_history ORDER BY id DESC LIMIT 8").fetchall()
+        band_rows = conn.execute(
+            "SELECT performance_band, COUNT(*) AS count FROM prediction_history GROUP BY performance_band"
+        ).fetchall()
+        support_rows = conn.execute(
+            "SELECT risk_level, COUNT(*) AS count FROM prediction_history GROUP BY risk_level"
+        ).fetchall()
+        by_day = conn.execute(
+            """SELECT substr(created_at, 1, 10) AS day, COUNT(*) AS count
+               FROM prediction_history GROUP BY day ORDER BY day DESC LIMIT 14"""
+        ).fetchall()
+    finally:
+        conn.close()
 
     bands = {"High (75–100)": 0, "Moderate (60–74.9)": 0, "Needs support (45–59.9)": 0, "Low (<45)": 0}
     for row in band_rows:
         if row[0] in bands:
             bands[row[0]] = int(row[1])
 
+    support_levels = {row[0]: int(row[1]) for row in support_rows}
     return {
         "total_predictions": total_predictions,
         "saved_students": saved_students,
@@ -250,8 +275,10 @@ def dashboard_stats() -> dict:
         "min_prediction": round(float(prediction_summary[2]), 2) if prediction_summary[2] is not None else None,
         "max_prediction": round(float(prediction_summary[3]), 2) if prediction_summary[3] is not None else None,
         "performance_bands": bands,
+        "support_levels": support_levels,
         "last_prediction": dict(latest) if latest else None,
         "recent_predictions": [dict(r) for r in recent],
+        "predictions_by_day": [dict(r) for r in by_day],
     }
 
 
@@ -259,8 +286,10 @@ def csv_text(table: str) -> str:
     if table not in {"students", "prediction_history"}:
         raise ValueError("Unsupported export")
     conn = connect()
-    rows = conn.execute(f"SELECT * FROM {table} ORDER BY id DESC").fetchall()
-    conn.close()
+    try:
+        rows = conn.execute(f"SELECT * FROM {table} ORDER BY id DESC").fetchall()
+    finally:
+        conn.close()
     output = io.StringIO()
     writer = csv.writer(output)
     if rows:

@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pandas as pd
 
@@ -19,6 +21,8 @@ def test_training_is_deterministic_except_timestamp():
     assert a['selected_metrics'] == b['selected_metrics']
     assert a['dataset_rows'] == b['dataset_rows'] == 20
     assert a['holdout_size'] == b['holdout_size'] == 4
+    assert a['training_data_hash'] == b['training_data_hash']
+    assert a['model_version'] == b['model_version']
 
 
 def test_model_predictions_are_bounded_and_finite():
@@ -45,3 +49,13 @@ def test_metadata_contains_real_evaluation_context():
     assert metadata['holdout_size'] == 4
     assert metadata['cv_folds'] == 5
     assert metadata['limitations']
+    assert metadata['holdout_rows']
+    assert metadata['correlations_with_target']
+    assert len(metadata['training_data_hash']) == 64
+
+
+def test_saved_metadata_is_valid_json():
+    with open('outputs/model_metrics.json', 'r', encoding='utf-8') as handle:
+        metadata = json.load(handle)
+    assert metadata['model_name']
+    assert metadata['model_version']
