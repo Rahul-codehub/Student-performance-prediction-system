@@ -1,4 +1,4 @@
-# StudentIQ — Student Performance Analytics & Prediction System
+# Student Performance Analytics & Prediction System
 
 A college-ready Flask application that combines a supervised regression model with a web dashboard, SQLite persistence, model evaluation, explainability, data profiling, what-if simulation, student records, prediction history, and release tests.
 
